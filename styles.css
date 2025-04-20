@@ -1,0 +1,435 @@
+/* Custom styles for LevelUp Life */
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Custom classes */
+.dashboard-item {
+  opacity: 0;
+  animation: fadeIn 0.5s forwards;
+}
+
+.slide-fade {
+  opacity: 0;
+  animation: slideUp 0.5s forwards;
+}
+
+.level-up-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.level-up-overlay.show {
+  opacity: 1;
+}
+
+.achievement-popup {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: white;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  transform: translateX(20px);
+  transition: all 0.3s;
+}
+
+.achievement-popup.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Focus area buttons */
+.focus-area-btn {
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.focus-area-btn.active {
+  background-color: #f3f4f6;
+  border-color: currentColor;
+}
+
+.focus-area-btn:hover:not(.active) {
+  background-color: #f9fafb;
+}
+
+/* Quest items */
+.quest-item {
+  transition: all 0.3s;
+}
+
+.quest-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Progress bars */
+.progress-bar {
+  transition: width 0.3s;
+}
+
+/* Badges */
+.badge {
+  transition: all 0.3s;
+}
+
+.badge:hover {
+  transform: scale(1.05);
+}
+
+/* Achievement Popup */
+.achievement-popup {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transform: translateX(100%);
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.achievement-popup.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.achievement-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.achievement-icon {
+  font-size: 24px;
+}
+
+.achievement-text h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.achievement-text p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+/* Level Up Popup */
+.level-up-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  opacity: 0;
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.level-up-popup.show {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+.level-up-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.level-up-icon {
+  font-size: 48px;
+  animation: pulse 2s infinite;
+}
+
+.level-up-text h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.level-up-text p {
+  margin: 8px 0 0;
+  font-size: 16px;
+  color: #4b5563;
+}
+
+/* Confetti Animation */
+.confetti-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 999;
+}
+
+.confetti {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  animation: fall 5s linear forwards;
+}
+
+@keyframes fall {
+  0% {
+    transform: translateY(-100px) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Realm-specific themes */
+.theme-primary {
+    color: #2563eb !important;
+}
+
+.theme-secondary {
+    color: #60a5fa !important;
+}
+
+.theme-bg {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+}
+
+.theme-card {
+    background-color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 1rem;
+}
+
+/* Physical Realm */
+.physical .theme-primary {
+    color: #f97316 !important; /* Orange-500 */
+}
+
+.physical .theme-secondary {
+    color: #fb923c !important; /* Orange-400 */
+}
+
+.physical .theme-bg {
+    background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); /* Orange-50 to Orange-100 */
+}
+
+.physical #xpBar {
+    background-color: #f97316 !important; /* Orange-500 */
+}
+
+/* Mental Realm */
+.mental .theme-primary {
+    color: #7c3aed !important; /* Purple-600 */
+}
+
+.mental .theme-secondary {
+    color: #8b5cf6 !important; /* Purple-500 */
+}
+
+.mental .theme-bg {
+    background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%); /* Purple-50 to Purple-100 */
+}
+
+.mental #xpBar {
+    background-color: #7c3aed !important; /* Purple-600 */
+}
+
+/* Relationships Realm */
+.relationships .theme-primary {
+    color: #dc2626 !important; /* Red-600 */
+}
+
+.relationships .theme-secondary {
+    color: #ef4444 !important; /* Red-500 */
+}
+
+.relationships .theme-bg {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); /* Red-50 to Red-100 */
+}
+
+.relationships #xpBar {
+    background-color: #dc2626 !important; /* Red-600 */
+}
+
+/* Animations */
+@keyframes realmTransition {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dashboard-item {
+    animation: realmTransition 0.5s ease-out;
+}
+
+/* Badge animations */
+.badge-card {
+    transition: all 0.3s ease;
+}
+
+.badge-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.badge-card.unlocked {
+    animation: badgeUnlock 0.5s ease-out;
+}
+
+@keyframes badgeUnlock {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Quest animations */
+.quest-card {
+    transition: all 0.3s ease;
+}
+
+.quest-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.quest-card.completed {
+    animation: questComplete 0.5s ease-out;
+}
+
+@keyframes questComplete {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Level up animation */
+.level-up {
+    animation: levelUp 0.5s ease-out;
+}
+
+@keyframes levelUp {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Streak animation */
+.streak-flame {
+    animation: flicker 1s infinite alternate;
+}
+
+@keyframes flicker {
+    0% {
+        opacity: 0.7;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+.area-status {
+    padding: 2px 6px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+}
+
+.area-status.unlocked {
+    background-color: #10b981;
+    color: white;
+}
+
+.area-status.locked {
+    background-color: #e5e7eb;
+    color: #6b7280;
+}
+
+/* Focus Area Buttons - Updated colors */
+.focus-area-btn.active.physical {
+    color: #f97316;
+    border-color: #f97316;
+    background-color: #fff7ed;
+}
+
+.focus-area-btn.active.mental {
+    color: #7c3aed;
+    border-color: #7c3aed;
+    background-color: #f3e8ff;
+}
+
+.focus-area-btn.active.relationships {
+    color: #dc2626;
+    border-color: #dc2626;
+    background-color: #fee2e2;
+} 
