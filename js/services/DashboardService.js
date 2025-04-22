@@ -2,6 +2,7 @@ import { StorageService } from './StorageService.js';
 import { QuestService } from './QuestService.js';
 import { UIService } from './UIService.js';
 import { BADGES } from '../config/constants.js';
+import { QUEST_TYPES } from '../config/quests.js';
 
 export class DashboardService {
   static initDashboard(data) {
@@ -125,67 +126,128 @@ export class DashboardService {
       return;
     }
 
+    // Show quest acceptance popup for each quest
     questsToDisplay.forEach((quest) => {
-      if (!quest) return; // Skip undefined quests
-      
-      const div = document.createElement("div");
-      div.className = "flex justify-between items-center bg-gray-100 px-4 py-3 rounded mb-2";
-      div.innerHTML = `
-        <div class="flex-1">
-          <div class="flex items-center justify-between">
-            <p class="font-medium">${quest.title || 'Unnamed Quest'}</p>
-            <span class="text-xs text-gray-500">${quest.duration || '5'} min</span>
-          </div>
-          <p class="text-sm text-gray-600 mt-1">${quest.description || 'No description available'}</p>
-          <div class="flex items-center mt-2">
-            <div class="w-full bg-gray-200 rounded-full h-2.5 mr-2">
-              <div class="bg-indigo-600 h-2.5 rounded-full" style="width: ${quest.progress || 0}%"></div>
-            </div>
-            <span class="text-xs text-gray-500">${quest.progress || 0}%</span>
-          </div>
-        </div>
-        <div class="flex items-center space-x-2 ml-4">
-          <button class="refresh-btn bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded text-sm" title="Refresh Quest">
-            🔄
-          </button>
-          <button class="complete-btn ${
-            quest.completed
-            ? "bg-gray-300 cursor-not-allowed"
-            : "bg-green-500 hover:bg-green-600"
-          } text-white px-4 py-1 rounded text-sm" ${quest.completed ? "disabled" : ""}>
-            ${quest.completed ? "Completed!" : "Complete"}
-          </button>
-        </div>
-      `;
-
-      // Add refresh button handler
-      const refreshBtn = div.querySelector('.refresh-btn');
-      refreshBtn.addEventListener('click', () => {
-        const updatedData = QuestService.refreshQuest(quest.id);
-        if (updatedData) {
-          this.initDashboard(updatedData);
-        }
-      });
-
-      // Add complete button handler
-      const completeBtn = div.querySelector('.complete-btn');
-      if (!quest.completed) {
-        completeBtn.addEventListener('click', () => {
-          const result = QuestService.updateQuestProgress(quest.id, 100);
-          if (result) {
-            if (result.levelUp) {
-              UIService.celebrateLevelUp(result.newLevel, data.area);
-              if (result.achievement) {
-                UIService.showAchievement(result.achievement.title, result.achievement.description);
-              }
-            }
-            this.initDashboard(result.areaData);
-          }
-        });
-      }
-
-      questList.appendChild(div);
+      if (!quest) return;
+      this.showQuestAcceptancePopup(quest, data, questList);
     });
+  }
+
+  static showQuestAcceptancePopup(quest, data, questList) {
+    const popup = document.createElement('div');
+    popup.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    popup.innerHTML = `
+      <div class="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">${quest.title}</h2>
+        
+        <div class="space-y-4">
+          <div>
+            <h3 class="text-lg font-semibold text-gray-700">Description</h3>
+            <p class="text-gray-600">${quest.description}</p>
+          </div>
+
+          <div>
+            <h3 class="text-lg font-semibold text-gray-700">Quest Details</h3>
+            <ul class="list-disc list-inside text-gray-600">
+              <li>Duration: ${quest.duration}</li>
+              <li>Difficulty: ${quest.difficulty}</li>
+              <li>Base XP: ${quest.xpValue}</li>
+              ${quest.bonusXP ? `<li>Bonus XP: ${quest.bonusXP}</li>` : ''}
+            </ul>
+          </div>
+
+          ${this.getQuestTypeSpecificDetails(quest)}
+
+          <div class="flex justify-end space-x-4 mt-6">
+            <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300" onclick="this.closest('.fixed').remove()">
+              Decline
+            </button>
+            <button class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700" onclick="DashboardService.acceptQuest('${quest.id}', ${JSON.stringify(data).replace(/"/g, '&quot;')}, this.closest('.fixed'))">
+              Accept Quest
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(popup);
+  }
+
+  static getQuestTypeSpecificDetails(quest) {
+    switch (quest.type) {
+      case QUEST_TYPES.MULTI_DAY:
+        return `
+          <div>
+            <h3 class="text-lg font-semibold text-gray-700">Daily Checkpoints</h3>
+            <ul class="list-disc list-inside text-gray-600">
+              ${quest.checkpoints.map(cp => `
+                <li>Day ${cp.day}: ${cp.task} (${cp.xp} XP)</li>
+              `).join('')}
+            </ul>
+          </div>
+        `;
+      case QUEST_TYPES.COMPLEX:
+        return `
+          <div>
+            <h3 class="text-lg font-semibold text-gray-700">Steps</h3>
+            <ul class="list-disc list-inside text-gray-600">
+              ${quest.steps.map(step => `
+                <li>Step ${step.id}: ${step.task} (${step.xp} XP)</li>
+              `).join('')}
+            </ul>
+            ${quest.requirements ? `
+              <h4 class="text-md font-semibold text-gray-700 mt-2">Requirements</h4>
+              <ul class="list-disc list-inside text-gray-600">
+                ${quest.requirements.map(req => `<li>${req}</li>`).join('')}
+              </ul>
+            ` : ''}
+          </div>
+        `;
+      case QUEST_TYPES.STREAK:
+        return `
+          <div>
+            <h3 class="text-lg font-semibold text-gray-700">Streak Requirements</h3>
+            <ul class="list-disc list-inside text-gray-600">
+              <li>Daily Task: ${quest.dailyTask}</li>
+              <li>Required Streak: ${quest.streakRequirement} days</li>
+              <li>Maximum Missed Days: ${quest.failureRules.maxMissedDays}</li>
+              <li>Penalty per Miss: ${quest.failureRules.penaltyPerMiss} XP</li>
+            </ul>
+            <h4 class="text-md font-semibold text-gray-700 mt-2">Milestone Rewards</h4>
+            <ul class="list-disc list-inside text-gray-600">
+              ${quest.checkpoints.map(cp => `
+                <li>Day ${cp.day}: ${cp.reward.title} (${cp.reward.xp} XP)</li>
+              `).join('')}
+            </ul>
+          </div>
+        `;
+      default:
+        return '';
+    }
+  }
+
+  static acceptQuest(questId, data, popup) {
+    // Add quest to active quests
+    const quest = data.quests.find(q => q.id === questId);
+    if (quest) {
+      quest.accepted = true;
+      quest.acceptedAt = new Date().toISOString();
+      
+      // Save updated data
+      StorageService.saveUserData(data.area, data);
+      
+      // Remove popup
+      popup.remove();
+      
+      // Refresh dashboard
+      this.initDashboard(data);
+      
+      // Show acceptance message
+      UIService.showAchievement(
+        'Quest Accepted!',
+        `Good luck with your new quest: ${quest.title}`
+      );
+    }
   }
 
   static updateStatsSection(data, xpCap) {

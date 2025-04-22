@@ -1,23 +1,86 @@
+// Quest types and their characteristics
+export const QUEST_TYPES = {
+  SINGLE: 'single',      // Standard one-time completion
+  MULTI_DAY: 'multi_day', // Requires check-ins over multiple days
+  COMPLEX: 'complex',    // Multiple steps or requirements
+  STREAK: 'streak'       // Must be done consecutively
+};
+
 // Quest pool for each area and level range
 export const QUEST_POOL = {
   Physical: {
     Exercise: {
       "1-3": [ // Novice
-        { id: "pe1", title: "5-minute Stretching", duration: 5, xpValue: 20, description: "Simple full-body stretch routine" },
-        { id: "pe2", title: "10-minute Walk", duration: 10, xpValue: 25, description: "Take a short walk around your area" },
+        { id: "pe1", title: "5-minute Stretching", duration: 5, xpValue: 20, description: "Simple full-body stretch routine", difficulty: "easy", type: QUEST_TYPES.SINGLE },
+        { id: "pe2", title: "10-minute Walk", duration: 10, xpValue: 30, description: "Take a short walk around your area", difficulty: "easy", type: QUEST_TYPES.SINGLE },
         { id: "pe3", title: "Basic Squats", duration: 5, xpValue: 20, description: "Do 5 basic squats" },
         { id: "pe4", title: "Arm Circles", duration: 3, xpValue: 15, description: "30 seconds each direction" },
         { id: "pe5", title: "March in Place", duration: 5, xpValue: 20, description: "Simple marching exercise" }
       ],
       "4-6": [ // Beginner
-        { id: "pe6", title: "15-minute Walk", duration: 15, xpValue: 35, description: "Brisk walking pace" },
-        { id: "pe7", title: "10 Pushups", duration: 10, xpValue: 30, description: "Can be done on knees" },
-        { id: "pe8", title: "Basic Yoga Flow", duration: 15, xpValue: 35, description: "Simple yoga sequence" },
-        { id: "pe9", title: "Jump Rope Practice", duration: 10, xpValue: 30, description: "Practice basic jumping" },
+        { 
+          id: "pe6", 
+          title: "Weekly Exercise Plan", 
+          duration: "7 days", 
+          xpValue: 200, 
+          description: "Complete a 7-day exercise plan", 
+          difficulty: "medium", 
+          type: QUEST_TYPES.MULTI_DAY,
+          checkpoints: [
+            { day: 1, task: "20-min cardio", xp: 30 },
+            { day: 2, task: "Basic strength training", xp: 30 },
+            { day: 3, task: "15-min stretching", xp: 20 },
+            { day: 4, task: "20-min cardio", xp: 30 },
+            { day: 5, task: "Advanced strength training", xp: 40 },
+            { day: 6, task: "Rest and recovery", xp: 20 },
+            { day: 7, task: "Final workout", xp: 30 }
+          ],
+          bonusXP: 50 // Bonus XP for completing all checkpoints
+        },
+        { 
+          id: "pe7", 
+          title: "Strength Foundation", 
+          duration: "3 days", 
+          xpValue: 100, 
+          description: "Build basic strength through progressive exercises", 
+          difficulty: "medium", 
+          type: QUEST_TYPES.COMPLEX,
+          steps: [
+            { id: 1, task: "Learn proper form for basic exercises", xp: 20 },
+            { id: 2, task: "Complete 3 sets of each exercise", xp: 40 },
+            { id: 3, task: "Track and record your progress", xp: 20 }
+          ],
+          requirements: ["Complete step 1 before moving to step 2"],
+          bonusXP: 20
+        },
+        { id: "pe8", title: "10 Pushups", duration: 10, xpValue: 30, description: "Can be done on knees" },
+        { id: "pe9", title: "Basic Yoga Flow", duration: 15, xpValue: 35, description: "Simple yoga sequence" },
+        { id: "pe10", title: "Jump Rope Practice", duration: 10, xpValue: 30, description: "Practice basic jumping" },
         { id: "pe10", title: "Bodyweight Exercises", duration: 15, xpValue: 35, description: "Mix of basic exercises" }
       ],
       "7-9": [ // Apprentice
-        { id: "pe11", title: "20-minute HIIT", duration: 20, xpValue: 45, description: "Basic interval training" },
+        {
+          id: "pe11",
+          title: "30-Day Fitness Challenge",
+          duration: "30 days",
+          xpValue: 1000,
+          description: "Complete a comprehensive 30-day fitness program",
+          difficulty: "hard",
+          type: QUEST_TYPES.STREAK,
+          dailyTask: "Complete the day's designated workout",
+          streakRequirement: 30,
+          checkpoints: [
+            { day: 7, reward: { xp: 100, title: "Week 1 Champion" } },
+            { day: 14, reward: { xp: 150, title: "Halfway Hero" } },
+            { day: 21, reward: { xp: 200, title: "Third Week Warrior" } },
+            { day: 30, reward: { xp: 300, title: "Challenge Conqueror" } }
+          ],
+          bonusXP: 250,
+          failureRules: {
+            maxMissedDays: 3,
+            penaltyPerMiss: 50
+          }
+        },
         { id: "pe12", title: "Strength Circuit", duration: 25, xpValue: 50, description: "Full body workout" },
         { id: "pe13", title: "3km Run", duration: 30, xpValue: 55, description: "Steady pace run" },
         { id: "pe14", title: "Flexibility Flow", duration: 20, xpValue: 45, description: "Advanced stretching" },

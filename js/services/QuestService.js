@@ -1,4 +1,4 @@
-import { QUEST_POOL } from '../config/quests.js';
+import { QUEST_POOL, QUEST_TYPES } from '../config/quests.js';
 import { LEVEL_RANGES } from '../config/constants.js';
 import { StorageService } from './StorageService.js';
 import { AchievementService } from './AchievementService.js';
@@ -42,7 +42,9 @@ export class QuestService {
         ...quest,
         completed: false,
         progress: 0,
-        refreshable: true
+        refreshable: true,
+        accepted: false,
+        acceptedAt: null
       }));
 
     console.log('Generated quests:', selectedQuests);
@@ -59,7 +61,9 @@ export class QuestService {
         description: "Begin your first quest",
         completed: false,
         progress: 0,
-        refreshable: true
+        refreshable: true,
+        accepted: false,
+        acceptedAt: null
       },
       {
         id: "default2",
@@ -69,7 +73,9 @@ export class QuestService {
         description: "Write down three goals you want to achieve",
         completed: false,
         progress: 0,
-        refreshable: true
+        refreshable: true,
+        accepted: false,
+        acceptedAt: null
       },
       {
         id: "default3",
@@ -79,7 +85,9 @@ export class QuestService {
         description: "Complete one small task towards your goal",
         completed: false,
         progress: 0,
-        refreshable: true
+        refreshable: true,
+        accepted: false,
+        acceptedAt: null
       },
       {
         id: "default4",
@@ -89,7 +97,9 @@ export class QuestService {
         description: "Think about what you've accomplished today",
         completed: false,
         progress: 0,
-        refreshable: true
+        refreshable: true,
+        accepted: false,
+        acceptedAt: null
       },
       {
         id: "default5",
@@ -99,7 +109,9 @@ export class QuestService {
         description: "Plan your activities for tomorrow",
         completed: false,
         progress: 0,
-        refreshable: true
+        refreshable: true,
+        accepted: false,
+        acceptedAt: null
       }
     ];
   }
@@ -162,7 +174,7 @@ export class QuestService {
     return null;
   }
 
-  static async updateQuestProgress(questId, progress) {
+  static async updateQuestProgress(questId, progress, checkpointOrStepId = null) {
     const profile = StorageService.getProfile();
     const quest = profile.activeQuests.find(q => q.id === questId);
     
@@ -171,13 +183,24 @@ export class QuestService {
       return;
     }
 
-    // Update quest progress
-    quest.progress = progress;
-    
+    switch (quest.type) {
+      case QUEST_TYPES.MULTI_DAY:
+        this.handleMultiDayProgress(quest, checkpointOrStepId, progress);
+        break;
+      case QUEST_TYPES.COMPLEX:
+        this.handleComplexProgress(quest, checkpointOrStepId, progress);
+        break;
+      case QUEST_TYPES.STREAK:
+        this.handleStreakProgress(quest, progress);
+        break;
+      default:
+        this.handleStandardProgress(quest, progress);
+    }
+
     // Check if quest is completed
-    if (progress >= 100) {
+    if (this.isQuestComplete(quest)) {
       // Calculate reward with streak bonus
-      const reward = AchievementService.calculateQuestReward(quest, profile.currentStreak);
+      const reward = this.calculateTotalQuestXP(quest);
       
       // Update profile
       profile.xp += reward;
@@ -232,8 +255,150 @@ export class QuestService {
     }
   }
 
+  static handleMultiDayProgress(quest, checkpointId, progress) {
+    if (!quest.progress) quest.progress = {};
+    if (!quest.checkpointsCompleted) quest.checkpointsCompleted = [];
+    
+    if (checkpointId && !quest.checkpointsCompleted.includes(checkpointId)) {
+      quest.progress[checkpointId] = progress;
+      if (progress >= 100) {
+        quest.checkpointsCompleted.push(checkpointId);
+        const checkpoint = quest.checkpoints.find(cp => cp.day === checkpointId);
+        UIService.showAchievement(
+          'Checkpoint Complete!',
+          `Completed: ${checkpoint.task}\nEarned: ${checkpoint.xp} XP`
+        );
+      }
+    }
+  }
+
+  static handleComplexProgress(quest, stepId, progress) {
+    if (!quest.progress) quest.progress = {};
+    if (!quest.stepsCompleted) quest.stepsCompleted = [];
+    
+    // Check if previous steps are completed if there are requirements
+    if (quest.requirements && stepId > 1) {
+      const previousStepComplete = quest.stepsCompleted.includes(stepId - 1);
+      if (!previousStepComplete) {
+        UIService.showAchievement('Step Locked', 'Complete the previous step first!');
+        return;
+      }
+    }
+    
+    quest.progress[stepId] = progress;
+    if (progress >= 100 && !quest.stepsCompleted.includes(stepId)) {
+      quest.stepsCompleted.push(stepId);
+      const step = quest.steps.find(s => s.id === stepId);
+      UIService.showAchievement(
+        'Step Complete!',
+        `Completed: ${step.task}\nEarned: ${step.xp} XP`
+      );
+    }
+  }
+
+  static handleStreakProgress(quest, progress) {
+    const today = new Date().toDateString();
+    if (!quest.streakData) {
+      quest.streakData = {
+        currentStreak: 0,
+        lastCompletedDate: null,
+        missedDays: 0
+      };
+    }
+    
+    if (progress >= 100) {
+      const lastDate = quest.streakData.lastCompletedDate;
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+      
+      if (!lastDate || lastDate === yesterday) {
+        quest.streakData.currentStreak++;
+        quest.streakData.lastCompletedDate = today;
+        
+        // Check for checkpoint rewards
+        const checkpoint = quest.checkpoints?.find(cp => cp.day === quest.streakData.currentStreak);
+        if (checkpoint) {
+          UIService.showAchievement(
+            checkpoint.reward.title,
+            `Earned: ${checkpoint.reward.xp} XP`
+          );
+        }
+      } else if (lastDate !== today) {
+        quest.streakData.missedDays++;
+        if (quest.failureRules && quest.streakData.missedDays > quest.failureRules.maxMissedDays) {
+          this.handleQuestFailure(quest);
+        }
+        quest.streakData.currentStreak = 1;
+      }
+    }
+  }
+
+  static handleStandardProgress(quest, progress) {
+    quest.progress = progress;
+  }
+
+  static isQuestComplete(quest) {
+    switch (quest.type) {
+      case QUEST_TYPES.MULTI_DAY:
+        return quest.checkpointsCompleted?.length === quest.checkpoints.length;
+      case QUEST_TYPES.COMPLEX:
+        return quest.stepsCompleted?.length === quest.steps.length;
+      case QUEST_TYPES.STREAK:
+        return quest.streakData?.currentStreak >= quest.streakRequirement;
+      default:
+        return quest.progress >= 100;
+    }
+  }
+
+  static calculateTotalQuestXP(quest) {
+    let baseXP = quest.xpValue;
+    let bonusXP = quest.bonusXP || 0;
+    
+    // Add checkpoint/step XP
+    if (quest.type === QUEST_TYPES.MULTI_DAY || quest.type === QUEST_TYPES.COMPLEX) {
+      baseXP = quest.checkpointsCompleted?.reduce((total, cpId) => {
+        const checkpoint = quest.checkpoints?.find(cp => cp.day === cpId);
+        return total + (checkpoint?.xp || 0);
+      }, 0) || baseXP;
+    }
+    
+    // Apply streak bonuses
+    if (quest.type === QUEST_TYPES.STREAK) {
+      const perfectStreak = quest.streakData?.missedDays === 0;
+      if (perfectStreak) bonusXP *= 1.5;
+    }
+    
+    // Apply level and difficulty multipliers
+    return this.calculateQuestXP(baseXP + bonusXP, quest.level, quest.difficulty);
+  }
+
+  static handleQuestFailure(quest) {
+    UIService.showAchievement(
+      'Quest Failed',
+      `You missed too many days. The quest has been reset.`
+    );
+    quest.streakData.currentStreak = 0;
+    quest.streakData.missedDays = 0;
+    quest.progress = 0;
+  }
+
   static calculateLevel(xp) {
     // Level calculation formula: level = floor(sqrt(xp/100))
     return Math.floor(Math.sqrt(xp / 100)) + 1;
+  }
+
+  static getActiveQuests(area) {
+    const userData = StorageService.getUserData(area);
+    if (!userData || !userData.quests) return [];
+
+    // Filter for accepted quests
+    return userData.quests.filter(quest => quest.accepted && !quest.completed);
+  }
+
+  static getAvailableQuests(area) {
+    const userData = StorageService.getUserData(area);
+    if (!userData || !userData.quests) return [];
+
+    // Filter for unaccepted quests
+    return userData.quests.filter(quest => !quest.accepted);
   }
 } 
