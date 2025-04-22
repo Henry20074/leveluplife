@@ -486,14 +486,115 @@ function showSection(name) {
   const currentArea = localStorage.getItem('currentFocusArea');
   const allData = getAllUserData();
   
-  // Hide all sections first
+  if (name === 'settings') {
+    // Create modal container
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 transform scale-95 transition-transform duration-200">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-2xl font-bold">⚙️ Settings</h2>
+          <button class="close-modal text-gray-500 hover:text-gray-700">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="space-y-6">
+          <!-- App Info -->
+          <div>
+            <h3 class="text-lg font-semibold mb-4">App Information</h3>
+            <div class="space-y-2">
+              <div class="flex justify-between">
+                <span class="text-gray-600">Version</span>
+                <span class="font-medium">1.0.0</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Last Updated</span>
+                <span class="font-medium">March 21, 2024</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Data Management -->
+          <div>
+            <h3 class="text-lg font-semibold mb-4">Data Management</h3>
+            <div class="space-y-4">
+              <div class="flex justify-between items-center">
+                <span class="text-gray-600">Export Progress Data</span>
+                <button onclick="exportData()" class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                  Export
+                </button>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-gray-600">Import Progress Data</span>
+                <button onclick="importData()" class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                  Import
+                </button>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-gray-600">Reset All Progress</span>
+                <button onclick="confirmResetProgress()" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors">
+                  Reset
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Basic Preferences -->
+          <div>
+            <h3 class="text-lg font-semibold mb-4">Preferences</h3>
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <span class="text-gray-600">Sound Effects</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="soundToggle" class="sr-only peer" checked>
+                  <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Add to document
+    document.body.appendChild(modal);
+
+    // Animate in
+    requestAnimationFrame(() => {
+      modal.querySelector('div').classList.remove('scale-95', 'opacity-0');
+    });
+
+    // Add event listeners
+    const closeBtn = modal.querySelector('.close-modal');
+    closeBtn.addEventListener('click', () => {
+      modal.querySelector('div').classList.add('scale-95', 'opacity-0');
+      setTimeout(() => modal.remove(), 300);
+    });
+
+    // Close on outside click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.querySelector('div').classList.add('scale-95', 'opacity-0');
+        setTimeout(() => modal.remove(), 300);
+      }
+    });
+
+    // Initialize settings
+    initSettings();
+    return;
+  }
+
+  // For other sections, use the original logic
   document.querySelectorAll(".tab-section, #welcome, #area-selection, #survey").forEach((s) => {
+    console.log('Hiding section:', s.id);
     s.classList.remove("active");
-    setTimeout(() => s.classList.add("hidden"), 300); // Wait for fade out animation
+    s.classList.add("hidden");
   });
 
-  // Show the target section
   const target = document.getElementById(`section-${name}`);
+  console.log('Target section:', target);
   if (target) {
     target.classList.remove("hidden");
     // Force a reflow to ensure the animation triggers
@@ -506,6 +607,8 @@ function showSection(name) {
     // Animate elements in the newly shown section
     const elements = target.querySelectorAll('.dashboard-item, .slide-fade');
     animateElements(elements, 100);
+  } else {
+    console.error(`Section with id 'section-${name}' not found`);
   }
 
   // Update current state
@@ -2116,6 +2219,9 @@ document.addEventListener("DOMContentLoaded", () => {
     renderBadges({ level: 0, totalCompleted: 0 });
   }
 
+  // Initialize settings section
+  initSettings();
+
   // Add profile form handler
   const profileForm = document.getElementById('profileForm');
   if (profileForm) {
@@ -2141,40 +2247,6 @@ document.addEventListener("DOMContentLoaded", () => {
       alert('Profile updated successfully!');
     };
   }
-
-  // Add this CSS for the XP popup
-  const style = document.createElement('style');
-  style.textContent = `
-    .xp-popup {
-      position: absolute;
-      right: 10px;
-      top: -20px;
-      background: #4f46e5;
-      color: white;
-      padding: 4px 8px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: bold;
-      animation: xp-popup 2s ease-out;
-      opacity: 0;
-      z-index: 10;
-    }
-    
-    @keyframes xp-popup {
-      0% {
-        transform: translateY(0);
-        opacity: 1;
-      }
-      100% {
-        transform: translateY(-30px);
-        opacity: 0;
-      }
-    }
-  `;
-  document.head.appendChild(style);
-
-  // Initialize settings
-  initSettings();
 });
 
 const AREA_BADGES = {
@@ -2232,28 +2304,89 @@ const AREA_THEMES = {
 
 // Settings functions
 function initSettings() {
-  // Load saved settings
-  const settings = JSON.parse(localStorage.getItem('appSettings')) || {
-    soundEnabled: true,
-    soundVolume: 50,
-    darkMode: false,
-    questReminders: true,
-    streakReminders: true
+  // Initialize sound toggle
+  const soundToggle = document.getElementById('soundToggle');
+  if (soundToggle) {
+    const settings = JSON.parse(localStorage.getItem('levelUpSettings')) || {};
+    soundToggle.checked = settings.soundEnabled !== false; // Default to true
+    
+    soundToggle.addEventListener('change', (e) => {
+      const settings = JSON.parse(localStorage.getItem('levelUpSettings')) || {};
+      settings.soundEnabled = e.target.checked;
+      localStorage.setItem('levelUpSettings', JSON.stringify(settings));
+    });
+  }
+}
+
+// Add confirmation for reset
+function confirmResetProgress() {
+  showConfirmDialog(
+    'Reset Progress',
+    'Are you sure you want to reset all progress? This action cannot be undone.',
+    'Reset',
+    'Cancel'
+  ).then((confirmed) => {
+    if (confirmed) {
+      resetProgress();
+      showAchievement('Progress Reset', 'All progress has been reset successfully');
+    }
+  });
+}
+
+// Export data function
+function exportData() {
+  const data = {
+    userData: getAllUserData(),
+    settings: JSON.parse(localStorage.getItem('levelUpSettings')) || {}
   };
 
-  // Set initial values
-  document.getElementById('soundEnabled').checked = settings.soundEnabled;
-  document.getElementById('soundVolume').value = settings.soundVolume;
-  document.getElementById('darkMode').checked = settings.darkMode;
-  document.getElementById('questReminders').checked = settings.questReminders;
-  document.getElementById('streakReminders').checked = settings.streakReminders;
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'levelup-life-data.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
-  // Add event listeners
-  document.getElementById('soundEnabled').addEventListener('change', saveSettings);
-  document.getElementById('soundVolume').addEventListener('change', saveSettings);
-  document.getElementById('darkMode').addEventListener('change', saveSettings);
-  document.getElementById('questReminders').addEventListener('change', saveSettings);
-  document.getElementById('streakReminders').addEventListener('change', saveSettings);
+// Import data function
+function importData() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target.result);
+        
+        // Import user data
+        if (data.userData) {
+          Object.entries(data.userData).forEach(([area, areaData]) => {
+            saveUserData(area, areaData);
+          });
+        }
+        
+        // Import settings
+        if (data.settings) {
+          localStorage.setItem('levelUpSettings', JSON.stringify(data.settings));
+          initSettings();
+        }
+        
+        showAchievement('Data Imported', 'Your data has been successfully imported!');
+      } catch (error) {
+        console.error('Error importing data:', error);
+        showAchievement('Import Failed', 'There was an error importing your data.');
+      }
+    };
+    reader.readAsText(file);
+  };
+  
+  input.click();
 }
 
 function saveSettings() {
@@ -2284,66 +2417,6 @@ function applySettings(settings) {
     document.documentElement.classList.remove('dark');
   }
 }
-
-function exportData() {
-  const data = {
-    userData: getAllUserData(),
-    settings: JSON.parse(localStorage.getItem('appSettings')) || {}
-  };
-
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'levelup-life-data.json';
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function importData() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.json';
-  
-  input.onchange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const data = JSON.parse(event.target.result);
-        
-        // Import user data
-        if (data.userData) {
-          Object.entries(data.userData).forEach(([area, areaData]) => {
-            saveUserData(area, areaData);
-          });
-        }
-        
-        // Import settings
-        if (data.settings) {
-          localStorage.setItem('appSettings', JSON.stringify(data.settings));
-          initSettings();
-        }
-        
-        showAchievement('Data Imported', 'Your data has been successfully imported!');
-      } catch (error) {
-        console.error('Error importing data:', error);
-        showAchievement('Import Failed', 'There was an error importing your data.');
-      }
-    };
-    reader.readAsText(file);
-  };
-  
-  input.click();
-}
-
-// Initialize settings when the app loads
-document.addEventListener('DOMContentLoaded', () => {
-  // ... existing DOMContentLoaded code ...
-  initSettings();
-});
 
 // Add these functions at the end of the file, before the last closing brace
 
@@ -3176,3 +3249,18 @@ const TIME_GATED_QUEST = {
   refreshable: false,
   startDate: new Date().toDateString()
 };
+
+// Add confirmation for reset
+function confirmResetProgress() {
+  showConfirmDialog(
+    'Reset Progress',
+    'Are you sure you want to reset all progress? This action cannot be undone.',
+    'Reset',
+    'Cancel'
+  ).then((confirmed) => {
+    if (confirmed) {
+      resetProgress();
+      showAchievement('Progress Reset', 'All progress has been reset successfully');
+    }
+  });
+}
